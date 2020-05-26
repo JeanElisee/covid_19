@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.persistence.PrePersist;
 import java.util.Date;
 
 @Getter
@@ -33,4 +34,10 @@ public class GlobalCasesVo {
 
     @JsonProperty("Date")
     private Date caseDate;
+    private boolean isGlobal;
+
+    @PrePersist
+    void preInsert() {
+        this.isGlobal = false;
+    }
 }

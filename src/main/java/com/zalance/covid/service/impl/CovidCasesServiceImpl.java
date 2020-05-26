@@ -136,7 +136,7 @@ public class CovidCasesServiceImpl implements CovidCasesService {
         List<GlobalCases> covidCases;
 
         try {
-            covidCases = globalCasesRepository.findAllByCountryAndCaseDateAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedOrderByCaseDateDesc(country, globalCasesVo.getCaseDate(), globalCasesVo.getNewConfirmed(), globalCasesVo.getNewDeaths(), globalCasesVo.getNewRecovered(), globalCasesVo.getTotalConfirmed());
+            covidCases = globalCasesRepository.findAllByCountryAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedAndTotalDeathsAndTotalRecovered(country, globalCasesVo.getNewConfirmed(), globalCasesVo.getNewDeaths(), globalCasesVo.getNewRecovered(), globalCasesVo.getTotalConfirmed(), globalCasesVo.getTotalDeaths(), globalCasesVo.getTotalRecovered());
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while fetching the cases by country {} and date {} : {}", globalCasesVo.getCountryCode(), globalCasesVo.getCaseDate(), dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");

@@ -36,29 +36,24 @@ public class FeedServiceImpl implements FeedService {
 
     @Value("${country.url}")
     private String countryUrl;
-    @Value("${covid-cases.url}")
-    private String covidCasesUrl;
     @Value("${covid-cases.daily.url}")
     private String dailyUpdateUrl;
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
     @Value("${zalance.covid.country.queue.name}")
     private String covidCountryQueueName;
     @Value("${zalance.covid.cases.queue.name}")
     private String covidCasesQueueName;
 
-    @Autowired
-    private GlobalCasesRepository globalCasesRepository;
-    @Autowired
-    private ApiCallHistoryRepository apiCallHistoryRepository;
+    private final RabbitTemplate rabbitTemplate;
+    private final ApiCallHistoryRepository apiCallHistoryRepository;
 
     private final CountryService countryService;
     private final CovidCasesService covidCasesService;
 
-    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService) {
+    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, RabbitTemplate rabbitTemplate, ApiCallHistoryRepository apiCallHistoryRepository) {
         this.countryService = countryService;
         this.covidCasesService = covidCasesService;
+        this.rabbitTemplate = rabbitTemplate;
+        this.apiCallHistoryRepository = apiCallHistoryRepository;
     }
 
     @Override
@@ -87,18 +82,14 @@ public class FeedServiceImpl implements FeedService {
 
         logger.info("Summary is {}", xyzVo.toString());
 
-        try {
-            GlobalCases globalCases = CovidConvertor.INSTANCE.convertToGlobalCases(xyzVo.getGlobal(), true);
-            globalCases.setCaseDate(xyzVo.getCasesDate());
-            globalCases.setCountry(countryService.getCountryByIso("XX"));
-            globalCasesRepository.save(globalCases);
-            logger.info("Global case saved : {}", xyzVo.getGlobal().toString());
-        } catch (Exception e) {
-            logger.info("An error occurred while saving the global case detail", e);
-        }
+        xyzVo.getGlobal().setCaseDate(xyzVo.getCasesDate());
+        xyzVo.getGlobal().setCountryCode("XX");
+        xyzVo.getGlobal().setGlobal(true);
+
+        xyzVo.getCases().add(xyzVo.getGlobal());
 
         for (GlobalCasesVo casesVo : xyzVo.getCases()) {
-            if (casesVo.getCountryCode().equals(""))
+            if (casesVo.getCountryCode().isEmpty())
                 return;
 
             logger.info(casesVo.toString());
@@ -109,15 +100,15 @@ public class FeedServiceImpl implements FeedService {
             } catch (DataAccessException dataAccessException) {
                 return;
             } catch (CovidException covidException) {
-                logger.info("No country found for {}", casesVo.getCountryCode());
+                logger.info("No country found for '{}'", casesVo.getCountryCode());
                 return;
             }
 
             try {
                 covidCasesService.getCasesByDateAndCountry(casesVo);
-                logger.info("Case already saved for {} on {} skipping...", casesVo.getCountryName(), casesVo.getCaseDate());
+                logger.info("Case already saved for '{}' on '{}' skipping...", casesVo.getCountryName(), casesVo.getCaseDate());
             } catch (Exception e) {
-                logger.info("Saving new case {}", casesVo.toString());
+                logger.info("Saving new case '{}'", casesVo.toString());
                 covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
             }
         }

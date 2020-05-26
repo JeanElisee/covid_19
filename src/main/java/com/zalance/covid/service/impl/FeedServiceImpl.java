@@ -89,6 +89,8 @@ public class FeedServiceImpl implements FeedService {
         xyzVo.getCases().add(xyzVo.getGlobal());
 
         for (GlobalCasesVo casesVo : xyzVo.getCases()) {
+            if (casesVo == null)
+                return;
             if (casesVo.getCountryCode().isEmpty())
                 return;
 

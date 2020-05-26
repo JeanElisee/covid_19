@@ -85,6 +85,8 @@ public class FeedServiceImpl implements FeedService {
             return;
         }
 
+        logger.info("Summary is {}", xyzVo.toString());
+
         try {
             GlobalCases globalCases = CovidConvertor.INSTANCE.convertToGlobalCases(xyzVo.getGlobal(), true);
             globalCases.setCaseDate(xyzVo.getCasesDate());

@@ -14,5 +14,5 @@ public interface GlobalCasesRepository extends JpaRepository<GlobalCases, Long> 
 
     Page<GlobalCases> findAllByCaseDateOrderByCaseDateDesc(Date d, Pageable p);
 
-    List<GlobalCases> findAllByCountryAndCaseDateOrderByCaseDateDesc(Country c, Date d);
+    List<GlobalCases> findAllByCountryAndCaseDateAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedOrderByCaseDateDesc(Country c, Date d, Long newConfirmed, Long newDeaths, Long newRecovered, Long totalConfirmed);
 }

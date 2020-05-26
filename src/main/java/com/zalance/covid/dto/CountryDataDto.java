@@ -18,4 +18,10 @@ public class CountryDataDto {
 
     public CountryDataDto() {
     }
+
+    public CountryDataDto(String country, String slug, String iso) {
+        this.country = country;
+        this.slug = slug;
+        this.iso = iso;
+    }
 }

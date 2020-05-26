@@ -32,5 +32,5 @@ public class GlobalCasesVo {
     private Long totalRecovered;
 
     @JsonProperty("Date")
-    private Date date;
+    private Date caseDate;
 }

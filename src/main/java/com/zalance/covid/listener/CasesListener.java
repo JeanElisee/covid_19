@@ -1,8 +1,10 @@
 package com.zalance.covid.listener;
 
+import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.dto.ApiRetryVo;
 import com.zalance.covid.scheduler.FeedScheduler;
 import com.zalance.covid.service.FailOverService;
+import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -20,7 +22,7 @@ public class CasesListener {
     Logger logger = LoggerFactory.getLogger(CasesListener.class);
 
     @Autowired
-    private FeedScheduler feedScheduler;
+    private FeedService feedService;
     @Autowired
     private FailOverService failOverService;
 
@@ -30,18 +32,18 @@ public class CasesListener {
     @RabbitListener(queues = "${zalance.covid.cases.queue.name}")
     public void receiveMessage(ApiRetryVo apiRetryVo, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) {
         if (apiRetryVo == null) {
-            logger.info("Received null in country listener");
+            logger.info("Received null in case listener");
             return;
         }
 
-        logger.info("Country retry message received : {}", apiRetryVo);
+        logger.info("Case retry message received : {}", apiRetryVo);
 
         try {
-            feedScheduler.fetchAndFeedLocalDb();
+            feedService.getDataFromApi(ApiCallType.RETRY);
         } catch (Exception exception) {
             if (failOverService.canRetry(xDeath)) {
                 logger.error("An error occurred when fetching the cases, Will retry in {}min...", xMsgTtl);
-                throw new AmqpRejectAndDontRequeueException("Failed to process message");
+                throw new AmqpRejectAndDontRequeueException("Failed to save cases to the DB");
             }
         }
     }

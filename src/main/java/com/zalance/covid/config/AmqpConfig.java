@@ -50,7 +50,7 @@ public class AmqpConfig implements Serializable {
     Queue covidCasesRetryQueue() {
         return QueueBuilder.durable(covidCasesRetryQueueName)
                 .deadLetterExchange(covidDirectExchangeName)
-                .withArgument("x-message-ttl", xMsgTtl * 60 * 1000)
+                .withArgument("x-message-ttl", 1000 * 60 * xMsgTtl)
                 .build();
     }
 
@@ -58,7 +58,7 @@ public class AmqpConfig implements Serializable {
     Queue covidCountryRetryQueue() {
         return QueueBuilder.durable(covidCountryRetryQueueName)
                 .deadLetterExchange(covidDirectExchangeName)
-                .withArgument("x-message-ttl", xMsgTtl * 60 * 1000)
+                .withArgument("x-message-ttl", 1000 * 60 * xMsgTtl)
                 .build();
     }
 

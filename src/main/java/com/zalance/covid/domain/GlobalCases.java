@@ -7,13 +7,14 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Getter
 @Setter
 @ToString
 @Entity
 @Table(schema = "covid_19_schema")
-public class GlobalCases {
+public class GlobalCases extends AuditModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "serial")
@@ -26,6 +27,7 @@ public class GlobalCases {
     private Long totalRecovered;
 
     private boolean isGlobal;
+    private Date caseDate;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = true, cascade = CascadeType.MERGE)
     @JoinColumn(name = "country_id", nullable = true)

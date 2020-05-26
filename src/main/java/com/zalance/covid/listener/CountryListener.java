@@ -1,8 +1,10 @@
 package com.zalance.covid.listener;
 
+import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.dto.ApiRetryVo;
 import com.zalance.covid.scheduler.FeedScheduler;
 import com.zalance.covid.service.FailOverService;
+import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
@@ -20,7 +22,7 @@ public class CountryListener {
     Logger logger = LoggerFactory.getLogger(CountryListener.class);
 
     @Autowired
-    private FeedScheduler feedScheduler;
+    private FeedService feedService;
     @Autowired
     private FailOverService failOverService;
 
@@ -37,11 +39,11 @@ public class CountryListener {
         logger.info("Country retry message received : {}", apiRetryVo);
 
         try {
-            feedScheduler.fetchCountryAndFeedLocalDb();
+            feedService.getCountryAndSave(ApiCallType.RETRY);
         } catch (Exception exception) {
             if (failOverService.canRetry(xDeath)) {
                 logger.error("An error occurred when fetching the countries, Will retry in {}min...", xMsgTtl);
-                throw new AmqpRejectAndDontRequeueException("Failed to process message");
+                throw new AmqpRejectAndDontRequeueException("Failed to save country to the DB");
             }
         }
     }

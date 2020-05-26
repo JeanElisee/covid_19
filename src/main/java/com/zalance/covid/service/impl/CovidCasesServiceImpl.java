@@ -1,14 +1,16 @@
 package com.zalance.covid.service.impl;
 
 import com.zalance.covid.domain.Country;
-import com.zalance.covid.domain.CovidCases;
+import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.EntryDataDto;
+import com.zalance.covid.dto.GlobalCasesVo;
 import com.zalance.covid.exception.CovidException;
-import com.zalance.covid.repository.CovidCasesRepository;
+import com.zalance.covid.repository.GlobalCasesRepository;
 import com.zalance.covid.service.CountryService;
 import com.zalance.covid.service.CovidCasesService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,23 +24,25 @@ import java.util.List;
 public class CovidCasesServiceImpl implements CovidCasesService {
     Logger logger = LoggerFactory.getLogger(CovidCasesServiceImpl.class);
 
-    private final CovidCasesRepository covidCasesRepository;
     private final CountryService countryService;
 
-    public CovidCasesServiceImpl(CovidCasesRepository covidCasesRepository, CountryService countryService) {
-        this.covidCasesRepository = covidCasesRepository;
+    private GlobalCasesRepository globalCasesRepository;
+
+    @Autowired
+    public CovidCasesServiceImpl(CountryService countryService, GlobalCasesRepository globalCasesRepository) {
         this.countryService = countryService;
+        this.globalCasesRepository = globalCasesRepository;
     }
 
     @Override
-    public List<CovidCases> saveCases(List<CovidCases> covidCases) {
+    public List<GlobalCases> saveCases(List<GlobalCases> covidCases) {
         if (covidCases.isEmpty()) {
             logger.warn("List of cases is empty");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Couldn't save the list of cases.");
         }
 
         try {
-            return covidCasesRepository.saveAll(covidCases);
+            return globalCasesRepository.saveAll(covidCases);
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while saving the cases: {}", dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred");
@@ -49,23 +53,23 @@ public class CovidCasesServiceImpl implements CovidCasesService {
     }
 
     @Override
-    public CovidCases saveCase(CovidCases covidCases) {
+    public GlobalCases saveCase(GlobalCases globalCases) {
         try {
-            return covidCasesRepository.save(covidCases);
+            return globalCasesRepository.save(globalCases);
         } catch (DataAccessException dataAccessException) {
-            logger.warn("Error while saving the case {}: {}", covidCases.toString(), dataAccessException.toString());
+            logger.warn("Error while saving the case {}: {}", globalCases.toString(), dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred");
         } catch (Exception e) {
-            logger.warn("Error while saving the case {} {}", covidCases.toString(), e.toString());
+            logger.warn("Error while saving the case {} {}", globalCases.toString(), e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The case couldn't be saved.");
         }
     }
 
     @Override
-    public Page<CovidCases> getCases(Pageable pageable) {
-        Page<CovidCases> covidCases;
+    public Page<GlobalCases> getCases(Pageable pageable) {
+        Page<GlobalCases> covidCases;
         try {
-            covidCases = covidCasesRepository.findAll(pageable);
+            covidCases = globalCasesRepository.findAll(pageable);
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while fetching all the case: {}", dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred");
@@ -83,12 +87,12 @@ public class CovidCasesServiceImpl implements CovidCasesService {
     }
 
     @Override
-    public Page<CovidCases> getCasesByCountry(EntryDataDto entryDataDto, Pageable pageable) throws CovidException {
+    public Page<GlobalCases> getCasesByCountry(EntryDataDto entryDataDto, Pageable pageable) throws CovidException {
         Country country = countryService.getCountryByIso(entryDataDto.getCountryCode());
-        Page<CovidCases> covidCases;
+        Page<GlobalCases> covidCases;
 
         try {
-            covidCases = covidCasesRepository.findAllByCountryOrderByDateDesc(country, pageable);
+            covidCases = globalCasesRepository.findAllByCountryOrderByCaseDateDesc(country, pageable);
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while fetching the cases by country {}: {}", entryDataDto.getCountryCode(), dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
@@ -106,10 +110,10 @@ public class CovidCasesServiceImpl implements CovidCasesService {
     }
 
     @Override
-    public Page<CovidCases> getCasesByDate(EntryDataDto entryDataDto, Pageable pageable) {
-        Page<CovidCases> covidCases;
+    public Page<GlobalCases> getCasesByDate(GlobalCasesVo globalCasesVo, Pageable pageable) {
+        Page<GlobalCases> covidCases;
         try {
-            covidCases = covidCasesRepository.findAllByDateOrderByDateDesc(entryDataDto.getDate(), pageable);
+            covidCases = globalCasesRepository.findAllByCaseDateOrderByCaseDateDesc(globalCasesVo.getCaseDate(), pageable);
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while fetching the cases by date {}", dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
@@ -119,22 +123,22 @@ public class CovidCasesServiceImpl implements CovidCasesService {
         }
 
         if (covidCases.isEmpty()) {
-            logger.warn("No cases found for the date {}", entryDataDto.getCountryCode());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for the date " + entryDataDto.getCountryCode());
+            logger.warn("No cases found for the date {}", globalCasesVo.getCountryCode());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for the date " + globalCasesVo.getCountryCode());
         }
 
         return covidCases;
     }
 
     @Override
-    public List<CovidCases> getCasesByDateAndCountry(EntryDataDto entryDataDto) throws CovidException {
-        Country country = countryService.getCountryByIso(entryDataDto.getCountryCode());
-        List<CovidCases> covidCases;
+    public List<GlobalCases> getCasesByDateAndCountry(GlobalCasesVo globalCasesVo) throws CovidException {
+        Country country = countryService.getCountryByIso(globalCasesVo.getCountryCode());
+        List<GlobalCases> covidCases;
 
         try {
-            covidCases = covidCasesRepository.findAllByCountryAndDateOrderByDateDesc(country, entryDataDto.getDate());
+            covidCases = globalCasesRepository.findAllByCountryAndCaseDateOrderByCaseDateDesc(country, globalCasesVo.getCaseDate());
         } catch (DataAccessException dataAccessException) {
-            logger.warn("Error while fetching the cases by country {} and date {} : {}", entryDataDto.getCountryCode(), entryDataDto.getDate(), dataAccessException.toString());
+            logger.warn("Error while fetching the cases by country {} and date {} : {}", globalCasesVo.getCountryCode(), globalCasesVo.getCaseDate(), dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
         } catch (Exception e) {
             logger.warn("Error while fetching the cases by country and date {}", e.toString());
@@ -142,33 +146,33 @@ public class CovidCasesServiceImpl implements CovidCasesService {
         }
 
         if (covidCases.isEmpty()) {
-            logger.warn("No cases found for {} -> {} on {}", entryDataDto.getCountry(), entryDataDto.getCountryCode(), entryDataDto.getDate());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + entryDataDto.getCountry() + " -> " + entryDataDto.getCountryCode() + " on " + entryDataDto.getDate());
+            logger.warn("No cases found for {} -> {} on {}", globalCasesVo.getCountryName(), globalCasesVo.getCountryCode(), globalCasesVo.getCaseDate());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + globalCasesVo.getCountryName() + " -> " + globalCasesVo.getCountryCode() + " on " + globalCasesVo.getCaseDate());
         }
 
         return covidCases;
     }
 
-    @Override
-    public List<CovidCases> getCasesByDateAndCountryAndCity(EntryDataDto entryDataDto) throws CovidException {
-        Country country = countryService.getCountryByIso(entryDataDto.getCountryCode());
-        List<CovidCases> covidCases;
-
-        try {
-            covidCases = covidCasesRepository.findAllByCountryAndDateAndCityOrderByDateDesc(country, entryDataDto.getDate(), entryDataDto.getCity());
-        } catch (DataAccessException dataAccessException) {
-            logger.warn("Error while fetching the cases by country {} and date {} : {}", entryDataDto.getCountryCode(), entryDataDto.getDate(), dataAccessException.toString());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
-        } catch (Exception e) {
-            logger.warn("Error while fetching the cases by country and date {}", e.toString());
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No cases found");
-        }
-
-        if (covidCases.isEmpty()) {
-            logger.warn("No cases found for {} on {}", entryDataDto.getCountryCode(), entryDataDto.getDate());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + entryDataDto.getCountry() + " -> " + entryDataDto.getCountryCode() + " on " + entryDataDto.getDate());
-        }
-
-        return covidCases;
-    }
+//    @Override
+//    public List<GlobalCases> getCasesByDateAndCountryAndCity(EntryDataDto entryDataDto) throws CovidException {
+//        Country country = countryService.getCountryByIso(entryDataDto.getCountryCode());
+//        List<GlobalCases> covidCases;
+//
+//        try {
+//            covidCases = globalCasesRepository.findAllByCountryAndDateAndCityOrderByDateDesc(country, entryDataDto.getDate(), entryDataDto.getCity());
+//        } catch (DataAccessException dataAccessException) {
+//            logger.warn("Error while fetching the cases by country {} and date {} : {}", entryDataDto.getCountryCode(), entryDataDto.getDate(), dataAccessException.toString());
+//            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
+//        } catch (Exception e) {
+//            logger.warn("Error while fetching the cases by country and date {}", e.toString());
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No cases found");
+//        }
+//
+//        if (covidCases.isEmpty()) {
+//            logger.warn("No cases found for {} on {}", entryDataDto.getCountryCode(), entryDataDto.getDate());
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + entryDataDto.getCountry() + " -> " + entryDataDto.getCountryCode() + " on " + entryDataDto.getDate());
+//        }
+//
+//        return covidCases;
+//    }
 }

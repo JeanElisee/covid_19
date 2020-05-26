@@ -21,27 +21,17 @@ public class FeedScheduler {
     public void fetchCountryAndFeedLocalDb() {
         logger.info("Starting scheduled job to feed countries");
         try {
-            feedService.getCountryAndSave();
+            feedService.getCountryAndSave(ApiCallType.NORMAL);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
     }
-
-//    @Scheduled(fixedRate = 1000 * 60 * 60 * 12, initialDelay = 5000)
-//    public void fetchAndFeedLocalDb() {
-//        logger.info("Starting scheduled job to feed the DB from second schema");
-//        try {
-//            feedService.getDataFromApi("ALL");
-//        } catch (Exception e) {
-//            logger.error(e.getMessage());
-//        }
-//    }
-
-    @Scheduled(fixedRate = 1000 * 60 * 60 * 8, initialDelay = 5000)
+//                          ms    sec  min  hour
+    @Scheduled(fixedRate = 1000 * 60 * 60 * 10, initialDelay = 1000 * 10)
     public void fetchAndFeedLocalDb() {
-        logger.info("Starting scheduled job to feed the DB from second schema");
+        logger.info("Starting scheduled job to feed cases in DB");
         try {
-            feedService.getDataFromApi(ApiCallType.CASES_SUMMARY);
+            feedService.getDataFromApi(ApiCallType.NORMAL);
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

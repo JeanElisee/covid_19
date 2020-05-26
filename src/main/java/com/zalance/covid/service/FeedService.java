@@ -3,7 +3,7 @@ package com.zalance.covid.service;
 import com.zalance.covid.constant.ApiCallType;
 
 public interface FeedService {
-    void getDataFromApi();
+    void getDataFromApi(ApiCallType apiCallType);
 
-    void getCountryAndSave();
+    void getCountryAndSave(ApiCallType from);
 }

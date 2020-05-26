@@ -19,13 +19,16 @@ public class ApiCallHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "serial")
     private long id;
-    private Status status;
+    private String status;
     private Date date;
-    private ApiCallType apiCallType;
+    private String apiCallType;
 
     public ApiCallHistory() {
     }
 
-    public ApiCallHistory(Status status, Date date, ApiCallType apiCallType) {
+    public ApiCallHistory(String status, Date date, String apiCallType) {
+        this.status = status;
+        this.date = date;
+        this.apiCallType = apiCallType;
     }
 }

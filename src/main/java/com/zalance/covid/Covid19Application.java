@@ -17,12 +17,6 @@ import java.util.TimeZone;
 @EnableJpaAuditing
 @EnableScheduling
 public class Covid19Application {
-    @PostConstruct
-    public void init() {
-        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"));
-        System.out.println("Spring boot application running in Europe/Paris timezone :" + new Date());
-    }
-
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurerAdapter() {

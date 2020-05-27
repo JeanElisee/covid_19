@@ -2,6 +2,7 @@ package com.zalance.covid.service.impl;
 
 import com.zalance.covid.client.Covid19Api;
 import com.zalance.covid.constant.ApiCallType;
+import com.zalance.covid.constant.ErrorCode;
 import com.zalance.covid.constant.Status;
 import com.zalance.covid.convertor.CovidConvertor;
 import com.zalance.covid.domain.ApiCallHistory;
@@ -9,7 +10,6 @@ import com.zalance.covid.domain.Country;
 import com.zalance.covid.dto.CountryDataDto;
 import com.zalance.covid.dto.GlobalCasesDto;
 import com.zalance.covid.dto.XyzDto;
-import com.zalance.covid.exception.CovidException;
 import com.zalance.covid.exception.NotFoundException;
 import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.repository.ApiCallHistoryRepository;
@@ -43,7 +43,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
-    public void getDataFromApi(ApiCallType from) throws RetryException, CovidException {
+    public void getDataFromApi(ApiCallType from) throws RetryException {
         XyzDto xyzDto = null;
         try {
             xyzDto = covid19Api.covidDataSummaryClient();
@@ -65,9 +65,10 @@ public class FeedServiceImpl implements FeedService {
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
 
             if (!from.equals(ApiCallType.RETRY)) {
-                throw new RetryException(exception.getMessage());
+                throw new RetryException(exception.getMessage(), ErrorCode.NEED_TO_RETRY.getFieldValue());
             }
-            throw new CovidException("An error occurred while fetching the cases from the API");
+
+            throw new RetryException("An error occurred while fetching the cases from the API", ErrorCode.ANOTHER_ATTEMPT.getFieldValue());
         }
 
         logger.info("Summary is {}", xyzDto.toString());
@@ -105,7 +106,7 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
-    public void getCountryAndSave(ApiCallType from) throws RetryException, CovidException {
+    public void getCountryAndSave(ApiCallType from) throws RetryException {
         List<CountryDataDto> countryDataDtos = null;
         try {
             countryDataDtos = covid19Api.countryClient();
@@ -121,10 +122,10 @@ public class FeedServiceImpl implements FeedService {
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.COUNTRY.name()));
 
             if (!from.equals(ApiCallType.RETRY)) {
-                throw new RetryException(exception.getMessage());
+                throw new RetryException(exception.getMessage(), ErrorCode.NEED_TO_RETRY.getFieldValue());
             }
 
-            throw new CovidException("An error occurred while fetching the countries from the API");
+            throw new RetryException("An error occurred while fetching the countries from the API", ErrorCode.ANOTHER_ATTEMPT.getFieldValue());
         }
 
         // Adding a record for Global

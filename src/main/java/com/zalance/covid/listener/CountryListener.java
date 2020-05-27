@@ -1,6 +1,7 @@
 package com.zalance.covid.listener;
 
 import com.zalance.covid.constant.ApiCallType;
+import com.zalance.covid.constant.ErrorCode;
 import com.zalance.covid.dto.ApiRetryDto;
 import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.service.FailOverService;
@@ -30,7 +31,7 @@ public class CountryListener {
     private int xMsgTtl;
 
     @RabbitListener(queues = "${zalance.covid.country.queue.name}")
-    public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) {
+    public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) throws RetryException {
         if (apiRetryDto == null) {
             logger.info("Received null in country listener");
             return;
@@ -41,7 +42,7 @@ public class CountryListener {
         try {
             feedService.getCountryAndSave(ApiCallType.RETRY);
         } catch (RetryException retryException) {
-            if (failOverService.canRetry(xDeath)) {
+            if (failOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
                 logger.error("An error occurred when retrying the countries, Will retry in {}min...", xMsgTtl);
                 throw new AmqpRejectAndDontRequeueException("Failed to save countries to the DB");
             }

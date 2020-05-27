@@ -18,7 +18,7 @@ public class Covid19Api {
     @Value("${covid-cases.daily.url}")
     private String dailyUpdateUrl;
 
-    public List<CountryDataDto> countryClient() {
+    public List<CountryDataDto> countryClient() throws Exception {
         final RestTemplate restTemplate = new RestTemplate();
         final ResponseEntity<List<CountryDataDto>> dataReceivedFromApi = restTemplate.exchange(
                 countryUrl,
@@ -29,7 +29,7 @@ public class Covid19Api {
         return dataReceivedFromApi.getBody();
     }
 
-    public XyzDto covidDataSummaryClient() {
+    public XyzDto covidDataSummaryClient() throws Exception {
         final RestTemplate restTemplate = new RestTemplate();
         final ResponseEntity<XyzDto> xyzVo = restTemplate.exchange(
                 dailyUpdateUrl,

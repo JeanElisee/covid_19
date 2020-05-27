@@ -1,6 +1,7 @@
 package com.zalance.covid.listener;
 
 import com.zalance.covid.constant.ApiCallType;
+import com.zalance.covid.constant.ErrorCode;
 import com.zalance.covid.dto.ApiRetryDto;
 import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.service.FailOverService;
@@ -30,7 +31,7 @@ public class CasesListener {
     private int xMsgTtl;
 
     @RabbitListener(queues = "${zalance.covid.cases.queue.name}")
-    public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) {
+    public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) throws RetryException {
         if (apiRetryDto == null) {
             logger.info("Received null in case listener");
             return;
@@ -41,7 +42,7 @@ public class CasesListener {
         try {
             feedService.getDataFromApi(ApiCallType.RETRY);
         } catch (RetryException retryException) {
-            if (failOverService.canRetry(xDeath)) {
+            if (failOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
                 logger.error("An error occurred when retrying the cases, Will retry in {}min...", xMsgTtl);
                 throw new AmqpRejectAndDontRequeueException("Failed to save cases to the DB");
             }

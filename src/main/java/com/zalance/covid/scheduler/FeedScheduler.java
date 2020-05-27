@@ -1,6 +1,7 @@
 package com.zalance.covid.scheduler;
 
 import com.zalance.covid.constant.ApiCallType;
+import com.zalance.covid.constant.ErrorCode;
 import com.zalance.covid.constant.Status;
 import com.zalance.covid.dto.ApiRetryDto;
 import com.zalance.covid.exception.RetryException;
@@ -33,13 +34,15 @@ public class FeedScheduler {
 
     //                     ms    sec  min  hour  day
     @Scheduled(fixedRate = 1000 * 60 * 60 * 24 * 3)
-    public void countryScheduler() {
+    public void countryScheduler() throws RetryException {
         logger.info("Starting scheduled job to feed countries");
         try {
             feedService.getCountryAndSave(ApiCallType.NORMAL);
         } catch (RetryException retryException) {
-            ApiRetryDto apiRetryDto = new ApiRetryDto(ApiCallType.COUNTRY, Status.FAILED, new Date(), retryException.getMessage());
-            rabbitTemplate.convertAndSend(covidCountryQueueName, apiRetryDto);
+            if (retryException.getErrorCode() == ErrorCode.NEED_TO_RETRY.getFieldValue()) {
+                ApiRetryDto apiRetryDto = new ApiRetryDto(ApiCallType.COUNTRY, Status.FAILED, new Date(), retryException.getMessage());
+                rabbitTemplate.convertAndSend(covidCountryQueueName, apiRetryDto);
+            }
         } catch (Exception e) {
             logger.error(e.getMessage());
         }
@@ -47,13 +50,15 @@ public class FeedScheduler {
 
     //                     ms    sec  min  hour
     @Scheduled(fixedRate = 1000 * 60 * 60 * 10, initialDelay = 1000 * 15)
-    public void covidCasesScheduler() {
+    public void covidCasesScheduler() throws RetryException {
         logger.info("Starting scheduled job to feed cases in DB");
         try {
             feedService.getDataFromApi(ApiCallType.NORMAL);
         } catch (RetryException retryException) {
-            ApiRetryDto apiRetryDto = new ApiRetryDto(ApiCallType.CASES_SUMMARY, Status.FAILED, new Date(), retryException.getMessage());
-            rabbitTemplate.convertAndSend(covidCasesQueueName, apiRetryDto);
+            if (retryException.getErrorCode() == ErrorCode.NEED_TO_RETRY.getFieldValue()) {
+                ApiRetryDto apiRetryDto = new ApiRetryDto(ApiCallType.CASES_SUMMARY, Status.FAILED, new Date(), retryException.getMessage());
+                rabbitTemplate.convertAndSend(covidCasesQueueName, apiRetryDto);
+            }
         } catch (Exception e) {
             logger.error(e.getMessage());
         }

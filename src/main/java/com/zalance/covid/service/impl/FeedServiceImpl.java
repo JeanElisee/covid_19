@@ -61,7 +61,6 @@ public class FeedServiceImpl implements FeedService {
             apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name(), (long) xyzDto.getCases().size()));
         } catch (Exception exception) {
             logger.info("An error occurred in covid case client call : {}", exception.toString());
-            exception.printStackTrace();
 
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
 

@@ -10,7 +10,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.factory.Mappers;
 
-@Mapper(componentModel = "spring", nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS, uses = LocalDateMapper.class)
+@Mapper(componentModel = "spring", uses = LocalDateMapper.class, imports = LocalDateMapper.class, nullValueCheckStrategy = NullValueCheckStrategy.ALWAYS)
 public interface CovidConvertor {
     CovidConvertor INSTANCE = Mappers.getMapper(CovidConvertor.class);
 

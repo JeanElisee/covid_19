@@ -3,7 +3,7 @@ package com.zalance.covid.service.impl;
 import com.zalance.covid.domain.Country;
 import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.EntryDataDto;
-import com.zalance.covid.dto.GlobalCasesVo;
+import com.zalance.covid.dto.GlobalCasesDto;
 import com.zalance.covid.exception.CovidException;
 import com.zalance.covid.repository.GlobalCasesRepository;
 import com.zalance.covid.service.CountryService;
@@ -110,10 +110,10 @@ public class CovidCasesServiceImpl implements CovidCasesService {
     }
 
     @Override
-    public Page<GlobalCases> getCasesByDate(GlobalCasesVo globalCasesVo, Pageable pageable) {
+    public Page<GlobalCases> getCasesByDate(GlobalCasesDto globalCasesDto, Pageable pageable) {
         Page<GlobalCases> covidCases;
         try {
-            covidCases = globalCasesRepository.findAllByCaseDateOrderByCaseDateDesc(globalCasesVo.getCaseDate(), pageable);
+            covidCases = globalCasesRepository.findAllByCaseDateOrderByCaseDateDesc(globalCasesDto.getCaseDate(), pageable);
         } catch (DataAccessException dataAccessException) {
             logger.warn("Error while fetching the cases by date {}", dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
@@ -123,22 +123,22 @@ public class CovidCasesServiceImpl implements CovidCasesService {
         }
 
         if (covidCases.isEmpty()) {
-            logger.warn("No cases found for the date {}", globalCasesVo.getCountryCode());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for the date " + globalCasesVo.getCountryCode());
+            logger.warn("No cases found for the date {}", globalCasesDto.getCountryCode());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for the date " + globalCasesDto.getCountryCode());
         }
 
         return covidCases;
     }
 
     @Override
-    public List<GlobalCases> getCasesByDateAndCountry(GlobalCasesVo globalCasesVo) throws CovidException {
-        Country country = countryService.getCountryByIso(globalCasesVo.getCountryCode());
+    public List<GlobalCases> getCasesByDateAndCountry(GlobalCasesDto globalCasesDto) throws CovidException {
+        Country country = countryService.getCountryByIso(globalCasesDto.getCountryCode());
         List<GlobalCases> covidCases;
 
         try {
-            covidCases = globalCasesRepository.findAllByCountryAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedAndTotalDeathsAndTotalRecovered(country, globalCasesVo.getNewConfirmed(), globalCasesVo.getNewDeaths(), globalCasesVo.getNewRecovered(), globalCasesVo.getTotalConfirmed(), globalCasesVo.getTotalDeaths(), globalCasesVo.getTotalRecovered());
+            covidCases = globalCasesRepository.findAllByCountryAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedAndTotalDeathsAndTotalRecovered(country, globalCasesDto.getNewConfirmed(), globalCasesDto.getNewDeaths(), globalCasesDto.getNewRecovered(), globalCasesDto.getTotalConfirmed(), globalCasesDto.getTotalDeaths(), globalCasesDto.getTotalRecovered());
         } catch (DataAccessException dataAccessException) {
-            logger.warn("Error while fetching the cases by country {} and date {} : {}", globalCasesVo.getCountryCode(), globalCasesVo.getCaseDate(), dataAccessException.toString());
+            logger.warn("Error while fetching the cases by country {} and date {} : {}", globalCasesDto.getCountryCode(), globalCasesDto.getCaseDate(), dataAccessException.toString());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
         } catch (Exception e) {
             logger.warn("Error while fetching the cases by country and date {}", e.toString());
@@ -146,8 +146,8 @@ public class CovidCasesServiceImpl implements CovidCasesService {
         }
 
         if (covidCases.isEmpty()) {
-            logger.warn("No cases found for {} -> {} on {}", globalCasesVo.getCountryName(), globalCasesVo.getCountryCode(), globalCasesVo.getCaseDate());
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + globalCasesVo.getCountryName() + " -> " + globalCasesVo.getCountryCode() + " on " + globalCasesVo.getCaseDate());
+            logger.warn("No cases found for {} -> {} on {}", globalCasesDto.getCountryName(), globalCasesDto.getCountryCode(), globalCasesDto.getCaseDate());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cases found for " + globalCasesDto.getCountryName() + " -> " + globalCasesDto.getCountryCode() + " on " + globalCasesDto.getCaseDate());
         }
 
         return covidCases;

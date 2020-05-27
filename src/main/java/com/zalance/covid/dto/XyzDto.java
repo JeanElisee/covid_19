@@ -11,11 +11,11 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class XyzVo {
+public class XyzDto {
     @JsonProperty("Global")
-    private GlobalCasesVo global;
+    private GlobalCasesDto global;
     @JsonProperty("Countries")
-    private List<GlobalCasesVo> cases;
+    private List<GlobalCasesDto> cases;
     @JsonProperty("Date")
     private Date casesDate;
 }

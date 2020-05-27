@@ -12,17 +12,25 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class ApiRetryVo implements Serializable {
+public class ApiRetryDto implements Serializable {
     private ApiCallType apiCallType;
     private Status status;
     private Date failureDateTime;
+    private String reason;
 
-    public ApiRetryVo() {
+    public ApiRetryDto() {
     }
 
-    public ApiRetryVo(ApiCallType apiCallType, Status status, Date failureDateTime) {
+//    public ApiRetryVo(ApiCallType apiCallType, Status status, Date failureDateTime) {
+//        this.apiCallType = apiCallType;
+//        this.status = status;
+//        this.failureDateTime = failureDateTime;
+//    }
+
+    public ApiRetryDto(ApiCallType apiCallType, Status status, Date failureDateTime, String reason) {
         this.apiCallType = apiCallType;
         this.status = status;
         this.failureDateTime = failureDateTime;
+        this.reason = reason;
     }
 }

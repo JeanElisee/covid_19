@@ -11,7 +11,7 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
-public class GlobalCasesVo {
+public class GlobalCasesDto {
     @JsonProperty("Country")
     private String countryName;
     @JsonProperty("CountryCode")

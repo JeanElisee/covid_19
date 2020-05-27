@@ -3,7 +3,7 @@ package com.zalance.covid.convertor;
 import com.zalance.covid.domain.Country;
 import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.CountryDataDto;
-import com.zalance.covid.dto.GlobalCasesVo;
+import com.zalance.covid.dto.GlobalCasesDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
@@ -14,12 +14,12 @@ public interface CovidConvertor {
     CovidConvertor INSTANCE = Mappers.getMapper(CovidConvertor.class);
 
     @Mapping(source = "country", target = "country")
-    GlobalCases convertToGlobalCases(GlobalCasesVo globalCasesVo, Country country);
+    GlobalCases convertToGlobalCases(GlobalCasesDto globalCasesDto, Country country);
 
     @Mapping(source = "countryDataDto.slug", target = "commonName")
     @Mapping(source = "countryDataDto.country", target = "name")
     Country convertToCountry(CountryDataDto countryDataDto);
 
     @Mapping(source = "isGlobal", target = "global")
-    GlobalCases convertToGlobalCases(GlobalCasesVo globalCasesVo, boolean isGlobal);
+    GlobalCases convertToGlobalCases(GlobalCasesDto globalCasesDto, boolean isGlobal);
 }

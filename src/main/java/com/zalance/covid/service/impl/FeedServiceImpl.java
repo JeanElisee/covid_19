@@ -1,31 +1,24 @@
 package com.zalance.covid.service.impl;
 
+import com.zalance.covid.client.Covid19Api;
 import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.constant.Status;
 import com.zalance.covid.convertor.CovidConvertor;
 import com.zalance.covid.domain.ApiCallHistory;
 import com.zalance.covid.domain.Country;
-import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.*;
 import com.zalance.covid.exception.CovidException;
+import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.repository.ApiCallHistoryRepository;
-import com.zalance.covid.repository.GlobalCasesRepository;
 import com.zalance.covid.service.CountryService;
 import com.zalance.covid.service.CovidCasesService;
 import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.dao.DataAccessException;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Date;
 import java.util.List;
@@ -34,10 +27,6 @@ import java.util.List;
 public class FeedServiceImpl implements FeedService {
     Logger logger = LoggerFactory.getLogger(FeedServiceImpl.class);
 
-    @Value("${country.url}")
-    private String countryUrl;
-    @Value("${covid-cases.daily.url}")
-    private String dailyUpdateUrl;
     @Value("${zalance.covid.country.queue.name}")
     private String covidCountryQueueName;
     @Value("${zalance.covid.cases.queue.name}")
@@ -45,22 +34,24 @@ public class FeedServiceImpl implements FeedService {
 
     private final RabbitTemplate rabbitTemplate;
     private final ApiCallHistoryRepository apiCallHistoryRepository;
+    private final Covid19Api covid19Api;
 
     private final CountryService countryService;
     private final CovidCasesService covidCasesService;
 
-    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, RabbitTemplate rabbitTemplate, ApiCallHistoryRepository apiCallHistoryRepository) {
+    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, RabbitTemplate rabbitTemplate, ApiCallHistoryRepository apiCallHistoryRepository, Covid19Api covid19Api) {
         this.countryService = countryService;
         this.covidCasesService = covidCasesService;
         this.rabbitTemplate = rabbitTemplate;
         this.apiCallHistoryRepository = apiCallHistoryRepository;
+        this.covid19Api = covid19Api;
     }
 
     @Override
-    public void getDataFromApi(ApiCallType from) {
-        XyzVo xyzVo = null;
+    public void getDataFromApi(ApiCallType from) throws RetryException, CovidException {
+        XyzDto xyzDto = null;
         try {
-            xyzVo = covidDataSummaryClient();
+            xyzDto = covid19Api.covidDataSummaryClient();
             apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
         } catch (Exception exception) {
             logger.info("An error occurred in covid case client call : {}", exception.toString());
@@ -68,27 +59,25 @@ public class FeedServiceImpl implements FeedService {
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
 
             if (!from.equals(ApiCallType.RETRY)) {
-                ApiRetryVo apiRetryVo = new ApiRetryVo(ApiCallType.CASES_SUMMARY, Status.FAILED, new Date());
-                rabbitTemplate.convertAndSend(covidCasesQueueName, apiRetryVo);
+                throw new RetryException(exception.getMessage());
             }
-
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An error occured while fetching the cases from the API");
+            throw new CovidException("An error occurred while fetching the cases from the API");
         }
 
-        if (xyzVo == null || xyzVo.getCases() == null) {
+        if (xyzDto == null || xyzDto.getCases() == null) {
             logger.info("No COVID cases found {}", new Date());
             return;
         }
 
-        logger.info("Summary is {}", xyzVo.toString());
+        logger.info("Summary is {}", xyzDto.toString());
 
-        xyzVo.getGlobal().setCaseDate(xyzVo.getCasesDate());
-        xyzVo.getGlobal().setCountryCode("XX");
-        xyzVo.getGlobal().setGlobal(true);
+        xyzDto.getGlobal().setCaseDate(xyzDto.getCasesDate());
+        xyzDto.getGlobal().setCountryCode("XX");
+        xyzDto.getGlobal().setGlobal(true);
 
-        xyzVo.getCases().add(xyzVo.getGlobal());
+        xyzDto.getCases().add(xyzDto.getGlobal());
 
-        for (GlobalCasesVo casesVo : xyzVo.getCases()) {
+        for (GlobalCasesDto casesVo : xyzDto.getCases()) {
             if (casesVo == null)
                 return;
             if (casesVo.getCountryCode().isEmpty())
@@ -117,23 +106,21 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
-    public void getCountryAndSave(ApiCallType from) {
+    public void getCountryAndSave(ApiCallType from) throws RetryException, CovidException {
         List<CountryDataDto> countryDataDtos = null;
         try {
-            countryDataDtos = countryClient();
+            countryDataDtos = covid19Api.countryClient();
 
             apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.COUNTRY.name()));
         } catch (Exception exception) {
             logger.info("An error occurred in country client call : {}", exception.toString());
-
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.COUNTRY.name()));
 
             if (!from.equals(ApiCallType.RETRY)) {
-                ApiRetryVo apiRetryVo = new ApiRetryVo(ApiCallType.COUNTRY, Status.FAILED, new Date());
-                rabbitTemplate.convertAndSend(covidCountryQueueName, apiRetryVo);
+                throw new RetryException(exception.getMessage());
             }
 
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An error occurred while fetching the countries from the API");
+            throw new CovidException("An error occurred while fetching the countries from the API");
         }
 
         if (countryDataDtos == null) {
@@ -158,27 +145,5 @@ public class FeedServiceImpl implements FeedService {
                 countryService.addCountry(CovidConvertor.INSTANCE.convertToCountry(c));
             }
         }
-    }
-
-    private List<CountryDataDto> countryClient() {
-        final RestTemplate restTemplate = new RestTemplate();
-        final ResponseEntity<List<CountryDataDto>> dataReceivedFromApi = restTemplate.exchange(
-                countryUrl,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<CountryDataDto>>() {
-                });
-        return dataReceivedFromApi.getBody();
-    }
-
-    private XyzVo covidDataSummaryClient() {
-        final RestTemplate restTemplate = new RestTemplate();
-        final ResponseEntity<XyzVo> xyzVo = restTemplate.exchange(
-                dailyUpdateUrl,
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<XyzVo>() {
-                });
-        return xyzVo.getBody();
     }
 }

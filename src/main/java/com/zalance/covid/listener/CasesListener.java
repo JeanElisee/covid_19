@@ -1,8 +1,8 @@
 package com.zalance.covid.listener;
 
 import com.zalance.covid.constant.ApiCallType;
-import com.zalance.covid.dto.ApiRetryVo;
-import com.zalance.covid.scheduler.FeedScheduler;
+import com.zalance.covid.dto.ApiRetryDto;
+import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.service.FailOverService;
 import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
@@ -30,21 +30,23 @@ public class CasesListener {
     private int xMsgTtl;
 
     @RabbitListener(queues = "${zalance.covid.cases.queue.name}")
-    public void receiveMessage(ApiRetryVo apiRetryVo, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) {
-        if (apiRetryVo == null) {
+    public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) {
+        if (apiRetryDto == null) {
             logger.info("Received null in case listener");
             return;
         }
 
-        logger.info("Case retry message received : {}", apiRetryVo);
+        logger.info("Case retry message received : {}", apiRetryDto);
 
         try {
             feedService.getDataFromApi(ApiCallType.RETRY);
-        } catch (Exception exception) {
+        } catch (RetryException retryException) {
             if (failOverService.canRetry(xDeath)) {
-                logger.error("An error occurred when fetching the cases, Will retry in {}min...", xMsgTtl);
+                logger.error("An error occurred when retrying the cases, Will retry in {}min...", xMsgTtl);
                 throw new AmqpRejectAndDontRequeueException("Failed to save cases to the DB");
             }
+        } catch (Exception exception) {
+            logger.error("A error occurred when retrying the cases, no retry will be done. {}", exception.toString());
         }
     }
 }

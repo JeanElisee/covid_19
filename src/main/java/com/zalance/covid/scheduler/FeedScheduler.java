@@ -46,7 +46,7 @@ public class FeedScheduler {
     }
 
     //                     ms    sec  min  hour
-    @Scheduled(fixedRate = 1000 * 60 * 60 * 10, initialDelay = 1000 * 10)
+    @Scheduled(fixedRate = 1000 * 60 * 60 * 10, initialDelay = 1000 * 15)
     public void covidCasesScheduler() {
         logger.info("Starting scheduled job to feed cases in DB");
         try {

@@ -35,4 +35,7 @@ public class EntryDataDto {
     private Long active;
     @JsonProperty("Date")
     private Date date;
+
+    public EntryDataDto() {
+    }
 }

@@ -7,7 +7,8 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -27,10 +28,11 @@ public class GlobalCases extends AuditModel {
     private Long totalRecovered;
 
     private boolean isGlobal;
-    private Date caseDate;
+    private LocalDate caseDate;
+    private LocalTime caseTime;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = true, cascade = CascadeType.MERGE)
-    @JoinColumn(name = "country_id", nullable = true)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false, cascade = CascadeType.MERGE)
+    @JoinColumn(name = "country_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Country country;
 }

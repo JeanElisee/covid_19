@@ -6,8 +6,11 @@ import com.zalance.covid.constant.Status;
 import com.zalance.covid.convertor.CovidConvertor;
 import com.zalance.covid.domain.ApiCallHistory;
 import com.zalance.covid.domain.Country;
-import com.zalance.covid.dto.*;
+import com.zalance.covid.dto.CountryDataDto;
+import com.zalance.covid.dto.GlobalCasesDto;
+import com.zalance.covid.dto.XyzDto;
 import com.zalance.covid.exception.CovidException;
+import com.zalance.covid.exception.NotFoundException;
 import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.repository.ApiCallHistoryRepository;
 import com.zalance.covid.service.CountryService;
@@ -15,11 +18,10 @@ import com.zalance.covid.service.CovidCasesService;
 import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -27,22 +29,15 @@ import java.util.List;
 public class FeedServiceImpl implements FeedService {
     Logger logger = LoggerFactory.getLogger(FeedServiceImpl.class);
 
-    @Value("${zalance.covid.country.queue.name}")
-    private String covidCountryQueueName;
-    @Value("${zalance.covid.cases.queue.name}")
-    private String covidCasesQueueName;
-
-    private final RabbitTemplate rabbitTemplate;
     private final ApiCallHistoryRepository apiCallHistoryRepository;
     private final Covid19Api covid19Api;
 
     private final CountryService countryService;
     private final CovidCasesService covidCasesService;
 
-    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, RabbitTemplate rabbitTemplate, ApiCallHistoryRepository apiCallHistoryRepository, Covid19Api covid19Api) {
+    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, ApiCallHistoryRepository apiCallHistoryRepository, Covid19Api covid19Api) {
         this.countryService = countryService;
         this.covidCasesService = covidCasesService;
-        this.rabbitTemplate = rabbitTemplate;
         this.apiCallHistoryRepository = apiCallHistoryRepository;
         this.covid19Api = covid19Api;
     }
@@ -52,9 +47,21 @@ public class FeedServiceImpl implements FeedService {
         XyzDto xyzDto = null;
         try {
             xyzDto = covid19Api.covidDataSummaryClient();
-            apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
+
+            if (xyzDto == null || xyzDto.getCases() == null) {
+                logger.info("No COVID cases found {}", new Date());
+                return;
+            }
+
+            xyzDto.getGlobal().setDate(xyzDto.getCasesDate());
+            xyzDto.getGlobal().setCountryCode("XX");
+            xyzDto.getGlobal().setGlobal(true);
+            xyzDto.getCases().add(xyzDto.getGlobal());
+
+            apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name(), (long) xyzDto.getCases().size()));
         } catch (Exception exception) {
             logger.info("An error occurred in covid case client call : {}", exception.toString());
+            exception.printStackTrace();
 
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.CASES_SUMMARY.name()));
 
@@ -64,43 +71,36 @@ public class FeedServiceImpl implements FeedService {
             throw new CovidException("An error occurred while fetching the cases from the API");
         }
 
-        if (xyzDto == null || xyzDto.getCases() == null) {
-            logger.info("No COVID cases found {}", new Date());
-            return;
-        }
-
         logger.info("Summary is {}", xyzDto.toString());
-
-        xyzDto.getGlobal().setCaseDate(xyzDto.getCasesDate());
-        xyzDto.getGlobal().setCountryCode("XX");
-        xyzDto.getGlobal().setGlobal(true);
-
-        xyzDto.getCases().add(xyzDto.getGlobal());
 
         for (GlobalCasesDto casesVo : xyzDto.getCases()) {
             if (casesVo == null)
                 return;
-            if (casesVo.getCountryCode().isEmpty())
+            if (casesVo.getCountryCode().equals(""))
                 return;
 
-            logger.info(casesVo.toString());
             Country country = new Country();
 
             try {
                 country = countryService.getCountryByIso(casesVo.getCountryCode());
             } catch (DataAccessException dataAccessException) {
-                return;
-            } catch (CovidException covidException) {
-                logger.info("No country found for '{}'", casesVo.getCountryCode());
-                return;
+                continue;
+            } catch (NotFoundException notFoundException) {
+                logger.info("No country found for '{}' -> '{}'", casesVo.getCountryCode(), casesVo.getCountryName());
+                continue;
+            } catch (Exception exception) {
+                logger.info("An exception occurred {}", exception.toString());
+                continue;
             }
 
             try {
                 covidCasesService.getCasesByDateAndCountry(casesVo);
-                logger.info("Case already saved for '{}' on '{}' skipping...", casesVo.getCountryName(), casesVo.getCaseDate());
-            } catch (Exception e) {
-                logger.info("Saving new case '{}'", casesVo.toString());
+                logger.info("Case already saved for: {}, skipping...", casesVo.toString());
+            } catch (NotFoundException notFoundException) {
+                logger.info("Saving new case : {}", casesVo.toString());
                 covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
+            } catch (Exception e) {
+                logger.info("An error occurred while checking if the case already exist in DB : {}, {}", casesVo.toString(), e);
             }
         }
     }
@@ -111,7 +111,12 @@ public class FeedServiceImpl implements FeedService {
         try {
             countryDataDtos = covid19Api.countryClient();
 
-            apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.COUNTRY.name()));
+            if (countryDataDtos == null) {
+                logger.info("No country found, {}. Another call planned for : {}", new Date(), LocalDateTime.from((new Date()).toInstant()).plusDays(3));
+                return;
+            }
+
+            apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.COUNTRY.name(), (long) countryDataDtos.size()));
         } catch (Exception exception) {
             logger.info("An error occurred in country client call : {}", exception.toString());
             apiCallHistoryRepository.save(new ApiCallHistory(Status.FAILED.name(), new Date(), ApiCallType.COUNTRY.name()));
@@ -121,11 +126,6 @@ public class FeedServiceImpl implements FeedService {
             }
 
             throw new CovidException("An error occurred while fetching the countries from the API");
-        }
-
-        if (countryDataDtos == null) {
-            logger.info("No country found {}", new Date());
-            return;
         }
 
         // Adding a record for Global
@@ -140,9 +140,11 @@ public class FeedServiceImpl implements FeedService {
             try {
                 countryService.getCountryByIso(c.getIso());
                 logger.info("Country: {} already existing skipping...", c.toString());
-            } catch (Exception e) {
+            } catch (NotFoundException notFoundException) {
                 logger.info("Country: {} not existing saving...", c.toString());
                 countryService.addCountry(CovidConvertor.INSTANCE.convertToCountry(c));
+            } catch (Exception e) {
+                logger.info("An error occured {}", e.toString());
             }
         }
     }

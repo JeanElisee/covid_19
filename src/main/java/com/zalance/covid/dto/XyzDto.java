@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -17,5 +17,8 @@ public class XyzDto {
     @JsonProperty("Countries")
     private List<GlobalCasesDto> cases;
     @JsonProperty("Date")
-    private Date casesDate;
+    private LocalDateTime casesDate;
+
+    public XyzDto() {
+    }
 }

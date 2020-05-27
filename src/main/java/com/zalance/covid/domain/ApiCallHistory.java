@@ -22,6 +22,8 @@ public class ApiCallHistory {
     private String status;
     private Date date;
     private String apiCallType;
+    @Column(name = "data_retrieved")
+    private Long amountOfDataRetrieved;
 
     public ApiCallHistory() {
     }
@@ -30,5 +32,12 @@ public class ApiCallHistory {
         this.status = status;
         this.date = date;
         this.apiCallType = apiCallType;
+    }
+
+    public ApiCallHistory(String status, Date date, String apiCallType, Long amountOfDataRetrieved) {
+        this.status = status;
+        this.date = date;
+        this.apiCallType = apiCallType;
+        this.amountOfDataRetrieved = amountOfDataRetrieved;
     }
 }

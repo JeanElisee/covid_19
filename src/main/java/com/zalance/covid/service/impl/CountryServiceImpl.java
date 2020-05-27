@@ -2,6 +2,7 @@ package com.zalance.covid.service.impl;
 
 import com.zalance.covid.domain.Country;
 import com.zalance.covid.exception.CovidException;
+import com.zalance.covid.exception.NotFoundException;
 import com.zalance.covid.repository.CountryRepository;
 import com.zalance.covid.service.CountryService;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class CountryServiceImpl implements CountryService {
     }
 
     @Override
-    public Country getCountryByIso(String isoCode) throws CovidException {
+    public Country getCountryByIso(String isoCode) throws CovidException, NotFoundException {
         Country country = null;
         try {
             country = countryRepository.findByIso(isoCode);
@@ -50,15 +51,14 @@ public class CountryServiceImpl implements CountryService {
         }
 
         if (country == null) {
-            logger.warn("No country found for the country code: {}", isoCode);
-            throw new CovidException("No country found for this ISO code");
+            throw new NotFoundException("No country found for this ISO code");
         }
 
         return country;
     }
 
     @Override
-    public Country getCountryByIsoAndCity(String isoCode, String city) throws CovidException {
+    public Country getCountryByIsoAndCity(String isoCode, String city) throws CovidException, NotFoundException {
         Country country = null;
         try {
             country = getCountryByIso(isoCode);
@@ -71,15 +71,14 @@ public class CountryServiceImpl implements CountryService {
         }
 
         if (country == null) {
-            logger.warn("No country found for the country code: {}", isoCode);
-            throw new CovidException("No country found for this ISO code");
+            throw new NotFoundException("No country found for this ISO code");
         }
 
         return country;
     }
 
     @Override
-    public List<Country> getCountries() {
+    public List<Country> getCountries() throws NotFoundException {
         List<Country> countries;
         try {
             countries = countryRepository.findAll();
@@ -92,8 +91,7 @@ public class CountryServiceImpl implements CountryService {
         }
 
         if (countries.isEmpty()) {
-            logger.warn("No country found in the database");
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No country found in the database");
+            throw new NotFoundException("No country found in the database");
         }
 
         return countries;

@@ -7,14 +7,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
 public interface GlobalCasesRepository extends JpaRepository<GlobalCases, Long> {
     Page<GlobalCases> findAllByCountryOrderByCaseDateDesc(Country country, Pageable p);
 
-    Page<GlobalCases> findAllByCaseDateOrderByCaseDateDesc(Date d, Pageable p);
+    Page<GlobalCases> findAllByCaseDateOrderByCaseDateDesc(LocalDate caseDate, Pageable pageable);
 
-    List<GlobalCases> findAllByCountryAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedAndTotalDeathsAndTotalRecovered(Country c, Long newConfirmed, Long newDeaths, Long newRecovered, Long totalConfirmed, Long totalDeaths, Long totalRecovered);
+    List<GlobalCases> findAllByCountryAndCaseDateAndNewConfirmedAndNewDeathsAndNewRecoveredAndTotalConfirmedAndTotalDeathsAndTotalRecovered(Country c, LocalDate caseDate, Long newConfirmed, Long newDeaths, Long newRecovered, Long totalConfirmed, Long totalDeaths, Long totalRecovered);
 }

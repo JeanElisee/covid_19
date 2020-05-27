@@ -6,7 +6,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.PrePersist;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -31,10 +31,13 @@ public class GlobalCasesDto {
     private Long newRecovered;
     @JsonProperty("TotalRecovered")
     private Long totalRecovered;
-
     @JsonProperty("Date")
-    private Date caseDate;
+    private LocalDateTime date;
+
     private boolean isGlobal;
+
+    public GlobalCasesDto() {
+    }
 
     @PrePersist
     void preInsert() {

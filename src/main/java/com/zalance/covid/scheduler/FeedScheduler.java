@@ -32,9 +32,9 @@ public class FeedScheduler {
         this.feedService = feedService;
     }
 
-    //                     ms    sec  min  hour  day
+    //                     ms     sec  min  hour day
     @Scheduled(fixedRate = 1000 * 60 * 60 * 24 * 3)
-    public void countryScheduler() throws RetryException {
+    public void countryScheduler() {
         logger.info("Starting scheduled job to feed countries");
         try {
             feedService.getCountryAndSave(ApiCallType.NORMAL);
@@ -48,9 +48,9 @@ public class FeedScheduler {
         }
     }
 
-    //                     ms    sec  min  hour
-    @Scheduled(fixedRate = 1000 * 60 * 60 * 10, initialDelay = 1000 * 15)
-    public void covidCasesScheduler() throws RetryException {
+    //                     ms     sec  min  hour
+    @Scheduled(fixedRate = 1000 * 60 * 60 * 4, initialDelay = 1000 * 15)
+    public void covidCasesScheduler() {
         logger.info("Starting scheduled job to feed cases in DB");
         try {
             feedService.getDataFromApi(ApiCallType.NORMAL);

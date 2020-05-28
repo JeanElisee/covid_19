@@ -28,11 +28,11 @@ public interface CovidConvertor {
             @Mapping(source = "globalCasesDto.totalDeaths", target = "totalDeaths"),
             @Mapping(source = "globalCasesDto.newRecovered", target = "newRecovered"),
             @Mapping(source = "globalCasesDto.totalRecovered", target = "totalRecovered"),
-            @Mapping(target = "global", ignore = true),
+            @Mapping(source = "globalCases.global", target = "global"),
+            @Mapping(source = "globalCases.caseDate", target = "caseDate"),
+            @Mapping(expression = "java(LocalDateMapper.asLocalTime(globalCasesDto.getDate()))", target = "caseTime"),
             @Mapping(target = "createdAt", ignore = true),
             @Mapping(target = "updatedAt", ignore = true),
-            @Mapping(target = "caseDate", ignore = true),
-            @Mapping(expression = "java(LocalDateMapper.asLocalTime(globalCasesDto.getDate()))", target = "caseTime"),
             @Mapping(source = "country", target = "country")
     })
     GlobalCases convertToGlobalCases(GlobalCasesDto globalCasesDto, GlobalCases globalCases, Country country);

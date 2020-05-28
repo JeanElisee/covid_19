@@ -101,8 +101,7 @@ public class FeedServiceImpl implements FeedService {
             }
 
             try {
-                covidCasesService.getCasesByDateAndCountryAndOtherDetails(casesVo);
-
+//                covidCasesService.getCasesByDateAndCountryAndOtherDetails(casesVo);
                 GlobalCases globalCasesRetrieved = covidCasesService.getCasesByDateAndCountry(casesVo);
 
                 if (globalCasesRetrieved != null &&
@@ -114,16 +113,16 @@ public class FeedServiceImpl implements FeedService {
                                 !globalCasesRetrieved.getTotalDeaths().equals(casesVo.getTotalDeaths()) ||
                                 !globalCasesRetrieved.getTotalRecovered().equals(casesVo.getTotalRecovered()))) {
                     updated += 1;
-                    logger.info("Updating case : {}", globalCasesRetrieved);
-                    covidCasesService.saveCase(globalCasesRetrieved);
+                    logger.info("Updating case : {} with : {}", globalCasesRetrieved.getId(), casesVo.toString());
+                    covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, globalCasesRetrieved, country));
+                } else if (globalCasesRetrieved == null) {
+                    saved += 1;
+                    logger.info("Saving new case : {}", casesVo.toString());
+                    covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
                 } else {
                     noChange += 1;
                     logger.info("Case already saved for: {}, skipping...", casesVo.toString());
                 }
-            } catch (NotFoundException notFoundException) {
-                saved += 1;
-                logger.info("Saving new case : {}", casesVo.toString());
-                covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
             } catch (Exception e) {
                 logger.info("An error occurred while checking if the case already exist in DB : {}, {}", casesVo.toString(), e);
             }

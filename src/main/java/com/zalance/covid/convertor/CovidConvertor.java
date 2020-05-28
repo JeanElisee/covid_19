@@ -7,6 +7,7 @@ import com.zalance.covid.dto.GlobalCasesDto;
 import com.zalance.covid.mapper.LocalDateMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Mappings;
 import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.factory.Mappers;
 
@@ -18,6 +19,23 @@ public interface CovidConvertor {
     @Mapping(expression = "java(LocalDateMapper.asLocalTime(globalCasesDto.getDate()))", target = "caseTime")
     @Mapping(source = "country", target = "country")
     GlobalCases convertToGlobalCases(GlobalCasesDto globalCasesDto, Country country);
+
+    @Mappings({
+            @Mapping(source = "globalCases.id", target = "id"),
+            @Mapping(source = "globalCasesDto.newConfirmed", target = "newConfirmed"),
+            @Mapping(source = "globalCasesDto.totalConfirmed", target = "totalConfirmed"),
+            @Mapping(source = "globalCasesDto.newDeaths", target = "newDeaths"),
+            @Mapping(source = "globalCasesDto.totalDeaths", target = "totalDeaths"),
+            @Mapping(source = "globalCasesDto.newRecovered", target = "newRecovered"),
+            @Mapping(source = "globalCasesDto.totalRecovered", target = "totalRecovered"),
+            @Mapping(target = "global", ignore = true),
+            @Mapping(target = "createdAt", ignore = true),
+            @Mapping(target = "updatedAt", ignore = true),
+            @Mapping(target = "caseDate", ignore = true),
+            @Mapping(expression = "java(LocalDateMapper.asLocalTime(globalCasesDto.getDate()))", target = "caseTime"),
+            @Mapping(source = "country", target = "country")
+    })
+    GlobalCases convertToGlobalCases(GlobalCasesDto globalCasesDto, GlobalCases globalCases, Country country);
 
     @Mapping(source = "countryDataDto.slug", target = "commonName")
     @Mapping(source = "countryDataDto.country", target = "name")

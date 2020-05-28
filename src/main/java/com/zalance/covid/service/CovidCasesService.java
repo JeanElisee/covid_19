@@ -21,7 +21,9 @@ public interface CovidCasesService {
 
     Page<GlobalCases> getCasesByDate(GlobalCasesDto globalCasesDto, Pageable pageable);
 
-    List<GlobalCases> getCasesByDateAndCountry(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException;
+    List<GlobalCases> getCasesByDateAndCountryAndOtherDetails(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException;
+
+    GlobalCases getCasesByDateAndCountry(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException;
 
 //    List<GlobalCases> getCasesByDateAndCountryAndCity(EntryDataDto entryDataDto) throws CovidException;
 }

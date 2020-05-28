@@ -132,7 +132,7 @@ public class CovidCasesServiceImpl implements CovidCasesService {
     }
 
     @Override
-    public List<GlobalCases> getCasesByDateAndCountry(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException {
+    public List<GlobalCases> getCasesByDateAndCountryAndOtherDetails(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException {
         Country country = countryService.getCountryByIso(globalCasesDto.getCountryCode());
         List<GlobalCases> covidCases;
 
@@ -150,6 +150,23 @@ public class CovidCasesServiceImpl implements CovidCasesService {
             throw new NotFoundException("No cases found for " + globalCasesDto.getCountryName() + " -> " + globalCasesDto.getCountryCode() + " on " + globalCasesDto.getDate().toLocalDate());
         }
 
+        return covidCases;
+    }
+
+    @Override
+    public GlobalCases getCasesByDateAndCountry(GlobalCasesDto globalCasesDto) throws CovidException, NotFoundException {
+        Country country = countryService.getCountryByIso(globalCasesDto.getCountryCode());
+        GlobalCases covidCases;
+
+        try {
+            covidCases = globalCasesRepository.findAllByCountryAndCaseDate(country, globalCasesDto.getDate().toLocalDate());
+        } catch (DataAccessException dataAccessException) {
+            logger.warn("Error while fetching the cases by country {} and date {} : {}", globalCasesDto.getCountryCode(), globalCasesDto.getDate().toLocalDate(), dataAccessException.toString());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No cases found");
+        } catch (Exception e) {
+            logger.warn("Error while fetching the cases by country and date {}", e.toString());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No cases found");
+        }
         return covidCases;
     }
 

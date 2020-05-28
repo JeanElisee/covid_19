@@ -7,9 +7,11 @@ import com.zalance.covid.constant.Status;
 import com.zalance.covid.convertor.CovidConvertor;
 import com.zalance.covid.domain.ApiCallHistory;
 import com.zalance.covid.domain.Country;
+import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.CountryDataDto;
 import com.zalance.covid.dto.GlobalCasesDto;
 import com.zalance.covid.dto.XyzDto;
+import com.zalance.covid.exception.CovidException;
 import com.zalance.covid.exception.NotFoundException;
 import com.zalance.covid.exception.RetryException;
 import com.zalance.covid.repository.ApiCallHistoryRepository;
@@ -43,8 +45,9 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
-    public void getDataFromApi(ApiCallType from) throws RetryException {
+    public void getDataFromApi(ApiCallType from) throws RetryException, CovidException, NotFoundException {
         XyzDto xyzDto = null;
+        ApiCallHistory apiCallHistory = null;
         try {
             xyzDto = covid19Api.covidDataSummaryClient();
 
@@ -58,7 +61,7 @@ public class FeedServiceImpl implements FeedService {
             xyzDto.getGlobal().setGlobal(true);
             xyzDto.getCases().add(xyzDto.getGlobal());
 
-            apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name(), (long) xyzDto.getCases().size()));
+            apiCallHistory = apiCallHistoryRepository.save(new ApiCallHistory(Status.SUCCESS.name(), new Date(), ApiCallType.CASES_SUMMARY.name(), (long) xyzDto.getCases().size()));
         } catch (Exception exception) {
             logger.info("An error occurred in covid case client call : {}", exception.toString());
 
@@ -72,6 +75,10 @@ public class FeedServiceImpl implements FeedService {
         }
 
         logger.info("Summary is {}", xyzDto.toString());
+
+        long saved = 0L;
+        long updated = 0L;
+        long noChange = 0L;
 
         for (GlobalCasesDto casesVo : xyzDto.getCases()) {
             if (casesVo == null)
@@ -94,15 +101,38 @@ public class FeedServiceImpl implements FeedService {
             }
 
             try {
-                covidCasesService.getCasesByDateAndCountry(casesVo);
-                logger.info("Case already saved for: {}, skipping...", casesVo.toString());
+                covidCasesService.getCasesByDateAndCountryAndOtherDetails(casesVo);
+
+                GlobalCases globalCasesRetrieved = covidCasesService.getCasesByDateAndCountry(casesVo);
+
+                if (globalCasesRetrieved != null &&
+                        (!globalCasesRetrieved.getNewConfirmed().equals(casesVo.getNewConfirmed()) ||
+                                !globalCasesRetrieved.getNewDeaths().equals(casesVo.getNewDeaths()) ||
+                                !globalCasesRetrieved.getNewRecovered().equals(casesVo.getNewRecovered()) ||
+                                !globalCasesRetrieved.getNewConfirmed().equals(casesVo.getNewConfirmed()) ||
+                                !globalCasesRetrieved.getTotalConfirmed().equals(casesVo.getTotalConfirmed()) ||
+                                !globalCasesRetrieved.getTotalDeaths().equals(casesVo.getTotalDeaths()) ||
+                                !globalCasesRetrieved.getTotalRecovered().equals(casesVo.getTotalRecovered()))) {
+                    updated += 1;
+                    logger.info("Updating case : {}", globalCasesRetrieved);
+                    covidCasesService.saveCase(globalCasesRetrieved);
+                } else {
+                    noChange += 1;
+                    logger.info("Case already saved for: {}, skipping...", casesVo.toString());
+                }
             } catch (NotFoundException notFoundException) {
+                saved += 1;
                 logger.info("Saving new case : {}", casesVo.toString());
                 covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
             } catch (Exception e) {
                 logger.info("An error occurred while checking if the case already exist in DB : {}, {}", casesVo.toString(), e);
             }
         }
+
+        apiCallHistory.setNoChange(noChange);
+        apiCallHistory.setUpdated(updated);
+        apiCallHistory.setSaved(saved);
+        apiCallHistoryRepository.save(apiCallHistory);
     }
 
     @Override

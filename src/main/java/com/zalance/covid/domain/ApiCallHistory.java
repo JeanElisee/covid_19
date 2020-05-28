@@ -25,6 +25,10 @@ public class ApiCallHistory {
     @Column(name = "data_retrieved")
     private Long amountOfDataRetrieved;
 
+    private Long saved;
+    private Long updated;
+    private Long noChange;
+
     public ApiCallHistory() {
     }
 

@@ -1,6 +1,5 @@
 package com.zalance.covid.service;
 
-import com.zalance.covid.listener.CountryListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,10 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class FailOverService {
-    Logger logger = LoggerFactory.getLogger(FailOverService.class);
+public class CovidFailOverService {
+    Logger logger = LoggerFactory.getLogger(CovidFailOverService.class);
 
-    @Value("${zalance.covid.max-retry.name}")
+    @Value("${zalance.notification.max-retry.value}")
     private int maxRetry;
 
     public boolean canRetry(List<Map<String, Object>> xDeath) {

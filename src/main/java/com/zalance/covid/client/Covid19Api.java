@@ -13,9 +13,9 @@ import java.util.List;
 
 @Component
 public class Covid19Api {
-    @Value("${country.url}")
+    @Value("${api-call.url.country}")
     private String countryUrl;
-    @Value("${covid-cases.daily.url}")
+    @Value("${api-call.url.daily-summary}")
     private String dailyUpdateUrl;
 
     public List<CountryDataDto> countryClient() throws Exception {

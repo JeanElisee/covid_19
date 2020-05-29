@@ -33,7 +33,7 @@ public class FeedServiceImpl implements FeedService {
 
     private final ApiCallHistoryRepository apiCallHistoryRepository;
     private final Covid19Api covid19Api;
-
+    
     private final CountryService countryService;
     private final CovidCasesService covidCasesService;
 
@@ -101,7 +101,6 @@ public class FeedServiceImpl implements FeedService {
             }
 
             try {
-//                covidCasesService.getCasesByDateAndCountryAndOtherDetails(casesVo);
                 GlobalCases globalCasesRetrieved = covidCasesService.getCasesByDateAndCountry(casesVo);
 
                 if (globalCasesRetrieved != null &&

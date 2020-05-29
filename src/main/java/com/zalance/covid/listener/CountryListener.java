@@ -4,7 +4,7 @@ import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.constant.ErrorCode;
 import com.zalance.covid.dto.ApiRetryDto;
 import com.zalance.covid.exception.RetryException;
-import com.zalance.covid.service.FailOverService;
+import com.zalance.covid.service.CovidFailOverService;
 import com.zalance.covid.service.FeedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +25,12 @@ public class CountryListener {
     @Autowired
     private FeedService feedService;
     @Autowired
-    private FailOverService failOverService;
+    private CovidFailOverService covidFailOverService;
 
-    @Value("${zalance.covid.x-msg-ttl.name}")
+    @Value("${zalance.notification.retry.x-msg-ttl}")
     private int xMsgTtl;
 
-    @RabbitListener(queues = "${zalance.covid.country.queue.name}")
+    @RabbitListener(queues = "${zalance.queue.covid.name.country}")
     public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) throws RetryException {
         if (apiRetryDto == null) {
             logger.info("Received null in country listener");
@@ -42,7 +42,7 @@ public class CountryListener {
         try {
             feedService.getCountryAndSave(ApiCallType.RETRY);
         } catch (RetryException retryException) {
-            if (failOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
+            if (covidFailOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
                 logger.error("An error occurred when retrying the countries, Will retry in {}min...", xMsgTtl);
                 throw new AmqpRejectAndDontRequeueException("Failed to save countries to the DB");
             }

@@ -9,11 +9,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import javax.annotation.PostConstruct;
-import java.util.Date;
-import java.util.TimeZone;
-
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.zalance.notification"})
 @EnableJpaAuditing
 @EnableScheduling
 public class Covid19Application {

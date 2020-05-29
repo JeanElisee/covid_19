@@ -13,22 +13,22 @@ import java.io.Serializable;
 
 @Configuration
 public class AmqpConfig implements Serializable {
-    @Value("${zalance.covid.country.queue.name}")
+    @Value("${zalance.queue.covid.name.country}")
     private String covidCountryQueueName;
-    @Value("${zalance.covid.cases.queue.name}")
+    @Value("${zalance.queue.covid.name.cases}")
     private String covidCasesQueueName;
 
-    @Value("${zalance.covid.country.retry.queue.name}")
+    @Value("${zalance.retry.queue.covid.name.country}")
     private String covidCountryRetryQueueName;
-    @Value("${zalance.covid.cases.retry.queue.name}")
+    @Value("${zalance.retry.queue.covid.name.cases}")
     private String covidCasesRetryQueueName;
 
-    @Value("${zalance.covid.x-msg-ttl.name}")
+    @Value("${zalance.notification.retry.x-msg-ttl}")
     private int xMsgTtl;
 
-    @Value("${zalance.covid.exchange.name}")
+    @Value("${zalance.retry.exchange.name}")
     private String covidDirectExchangeName;
-    @Value("${zalance.covid.deadletter.exchange.name}")
+    @Value("${zalance.exchange.name}")
     private String covidDeadLetterExchangeName;
 
     @Primary
@@ -63,7 +63,7 @@ public class AmqpConfig implements Serializable {
     }
 
     @Bean
-    DirectExchange exchange() {
+    DirectExchange covidExchange() {
         return new DirectExchange(covidDirectExchangeName);
     }
 
@@ -73,12 +73,12 @@ public class AmqpConfig implements Serializable {
     }
 
     @Bean
-    Binding covidCasesBinding(@Qualifier("covidCasesQueue") Queue queue, @Qualifier("exchange") DirectExchange exchange) {
+    Binding covidCasesBinding(@Qualifier("covidCasesQueue") Queue queue, @Qualifier("covidExchange") DirectExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(covidCasesQueueName);
     }
 
     @Bean
-    Binding covidCountryBinding(@Qualifier("covidCountryQueue") Queue queue, @Qualifier("exchange") DirectExchange exchange) {
+    Binding covidCountryBinding(@Qualifier("covidCountryQueue") Queue queue, @Qualifier("covidExchange") DirectExchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(covidCountryQueueName);
     }
 
@@ -93,7 +93,7 @@ public class AmqpConfig implements Serializable {
     }
 
     @Bean
-    public SimpleRabbitListenerContainerFactory myRabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+    public SimpleRabbitListenerContainerFactory covidRabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         return factory;

@@ -1,15 +1,18 @@
 spring:
   profiles:
-    active: local
+    active: ${ZALANCE_COVID_ENV:local}
   application:
     name: zalance-covid-19-svc
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/covid_19
-    username: postgres
+    url: jdbc:postgresql://192.168.0.99:5432/covid_19
+    username: jet
     password: cnh2n+2FN
-    jpa:
-      database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+    initialization-mode: never
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+    hibernate:
+      ddl-auto: update
 
   rabbitmq:
     host: 192.168.0.99
@@ -18,8 +21,33 @@ spring:
     password: cnh2n+2FN
 
 
+
+#  kafka:
+#    consumer:
+#      bootstrap-servers: localhost:9092
+#      group-id: group_id
+#      auto-offset-reset: earliest
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+#      properties:
+#        spring:
+#          json:
+#            trusted:
+#              packages: com.zalance.covid.*
+#    producer:
+#      bootstrap-servers: localhost:9092
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+logging:
+  level:
+    org:
+    springframework:
+      web: DEBUG
+      security: DEBUG
+
 server:
-  port: 7171
+  port: ${ZALANCE_COVID_PORT:7071}
 jwt:
   secret: covid19keyjwt-GHIOU7867gj
 api-call:
@@ -27,17 +55,23 @@ api-call:
     country: https://api.covid19api.com/countries
     daily-summary: https://api.covid19api.com/summary
 zalance:
+  scheduler:
+    enabled: false
+  admin:
+    name: Jean-Elisée
+    phone-number: +919606770337
+    email: jeanelisee@gmail.com
   notification:
     max-retry:
-      value: 3
+      value: 2
     retry:
       enable: true
-      x-msg-ttl: 5
+      x-msg-ttl: 60
   sms:
     enable: true
     company-name: Zalance
-    api-key: TEST
-    api-secret: TEST
+    api-key: df1d1b7c
+    api-secret: j8yv8MWp6k6d92Fs
   push-notification:
     enable: true
     configuration-file: appui-permis-firebase-adminsdk-3zjr5-24fa1271e7.json
@@ -74,3 +108,6 @@ zalance:
           welcome: /templates/messages/push/welcome-push.vm
         sms:
           welcome: /templates/messages/sms/welcome-sms.vm
+          report: /templates/messages/sms/report.vm
+        mail:
+          report:

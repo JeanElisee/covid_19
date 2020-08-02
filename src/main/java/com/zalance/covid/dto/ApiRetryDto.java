@@ -1,36 +1,26 @@
 package com.zalance.covid.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.constant.Status;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 @ToString
 public class ApiRetryDto implements Serializable {
+    @JsonProperty("apiCallType")
     private ApiCallType apiCallType;
+    @JsonProperty("status")
     private Status status;
-    private Date failureDateTime;
+    @JsonProperty("failureDateTime")
+    private LocalDateTime failureDateTime;
+    @JsonProperty("reason")
     private String reason;
-
-    public ApiRetryDto() {
-    }
-
-//    public ApiRetryVo(ApiCallType apiCallType, Status status, Date failureDateTime) {
-//        this.apiCallType = apiCallType;
-//        this.status = status;
-//        this.failureDateTime = failureDateTime;
-//    }
-
-    public ApiRetryDto(ApiCallType apiCallType, Status status, Date failureDateTime, String reason) {
-        this.apiCallType = apiCallType;
-        this.status = status;
-        this.failureDateTime = failureDateTime;
-        this.reason = reason;
-    }
 }

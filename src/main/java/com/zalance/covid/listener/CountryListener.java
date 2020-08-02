@@ -22,13 +22,16 @@ import java.util.Map;
 public class CountryListener {
     Logger logger = LoggerFactory.getLogger(CountryListener.class);
 
-    @Autowired
-    private FeedService feedService;
-    @Autowired
-    private CovidFailOverService covidFailOverService;
-
     @Value("${zalance.notification.retry.x-msg-ttl}")
     private int xMsgTtl;
+
+    private final FeedService feedService;
+    private final CovidFailOverService covidFailOverService;
+
+    public CountryListener(FeedService feedService, CovidFailOverService covidFailOverService) {
+        this.feedService = feedService;
+        this.covidFailOverService = covidFailOverService;
+    }
 
     @RabbitListener(queues = "${zalance.queue.covid.name.country}")
     public void receiveMessage(ApiRetryDto apiRetryDto, @Header(required = false, name = "x-death") List<Map<String, Object>> xDeath) throws RetryException {
@@ -43,11 +46,11 @@ public class CountryListener {
             feedService.getCountryAndSave(ApiCallType.RETRY);
         } catch (RetryException retryException) {
             if (covidFailOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
-                logger.error("An error occurred when retrying the countries, Will retry in {}min...", xMsgTtl);
-                throw new AmqpRejectAndDontRequeueException("Failed to save countries to the DB");
+                logger.error("An error occurred when retrying to fetch countries from API, Will retry in {} min...", xMsgTtl);
+                throw new AmqpRejectAndDontRequeueException("Failed to fetch countries from API");
             }
         } catch (Exception exception) {
-            logger.error("A error occurred when retrying the countries, no retry will be done. {}", exception.toString());
+            logger.error("A error occurred when retrying to fetch countries from API, no retry will be done. {}", exception.toString());
         }
     }
 }

@@ -1,25 +1,30 @@
 package com.zalance.covid.service.impl;
 
+import com.zalance.covid.builder.CovidMessageBuilder;
 import com.zalance.covid.client.Covid19Api;
 import com.zalance.covid.constant.ApiCallType;
 import com.zalance.covid.constant.ErrorCode;
+import com.zalance.covid.constant.NotificationCategory;
 import com.zalance.covid.constant.Status;
 import com.zalance.covid.convertor.CovidConvertor;
 import com.zalance.covid.domain.ApiCallHistory;
 import com.zalance.covid.domain.Country;
 import com.zalance.covid.domain.GlobalCases;
 import com.zalance.covid.dto.CountryDataDto;
+import com.zalance.covid.dto.CovidNotificationRequestDto;
 import com.zalance.covid.dto.GlobalCasesDto;
 import com.zalance.covid.dto.XyzDto;
-import com.zalance.covid.exception.CovidException;
 import com.zalance.covid.exception.NotFoundException;
 import com.zalance.covid.exception.RetryException;
+import com.zalance.covid.publisher.NotificationPublisher;
 import com.zalance.covid.repository.ApiCallHistoryRepository;
 import com.zalance.covid.service.CountryService;
 import com.zalance.covid.service.CovidCasesService;
 import com.zalance.covid.service.FeedService;
+import com.zalance.notification.exception.NotificationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
@@ -31,23 +36,32 @@ import java.util.List;
 public class FeedServiceImpl implements FeedService {
     Logger logger = LoggerFactory.getLogger(FeedServiceImpl.class);
 
-    private final ApiCallHistoryRepository apiCallHistoryRepository;
+    @Value("${zalance.admin.phone-number}")
+    private String zalanceAdminPhoneNumber;
+
+    @Value("${zalance.sms.enable}")
+    private boolean isSmsEnable;
+
     private final Covid19Api covid19Api;
-    
     private final CountryService countryService;
     private final CovidCasesService covidCasesService;
+    private final CovidMessageBuilder covidMessageBuilder;
+    private final NotificationPublisher notificationPublisher;
+    private final ApiCallHistoryRepository apiCallHistoryRepository;
 
-    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, ApiCallHistoryRepository apiCallHistoryRepository, Covid19Api covid19Api) {
+    public FeedServiceImpl(CountryService countryService, CovidCasesService covidCasesService, ApiCallHistoryRepository apiCallHistoryRepository, Covid19Api covid19Api, CovidMessageBuilder covidMessageBuilder, NotificationPublisher notificationPublisher) {
         this.countryService = countryService;
         this.covidCasesService = covidCasesService;
         this.apiCallHistoryRepository = apiCallHistoryRepository;
         this.covid19Api = covid19Api;
+        this.covidMessageBuilder = covidMessageBuilder;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Override
-    public void getDataFromApi(ApiCallType from) throws RetryException, CovidException, NotFoundException {
-        XyzDto xyzDto = null;
-        ApiCallHistory apiCallHistory = null;
+    public void getDataFromApi(ApiCallType from) throws RetryException, NotificationException {
+        XyzDto xyzDto;
+        ApiCallHistory apiCallHistory;
         try {
             xyzDto = covid19Api.covidDataSummaryClient();
 
@@ -102,6 +116,7 @@ public class FeedServiceImpl implements FeedService {
 
             try {
                 GlobalCases globalCasesRetrieved = covidCasesService.getCasesByDateAndCountry(casesVo);
+                GlobalCases newGlobalCases;
 
                 if (globalCasesRetrieved != null &&
                         (!globalCasesRetrieved.getNewConfirmed().equals(casesVo.getNewConfirmed()) ||
@@ -111,19 +126,21 @@ public class FeedServiceImpl implements FeedService {
                                 !globalCasesRetrieved.getTotalConfirmed().equals(casesVo.getTotalConfirmed()) ||
                                 !globalCasesRetrieved.getTotalDeaths().equals(casesVo.getTotalDeaths()) ||
                                 !globalCasesRetrieved.getTotalRecovered().equals(casesVo.getTotalRecovered()))) {
+                    newGlobalCases = CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, globalCasesRetrieved, country);
+                    logger.info("Updating case : {} with : {}", globalCasesRetrieved.toString(), newGlobalCases.toString());
+                    covidCasesService.saveCase(newGlobalCases);
                     updated += 1;
-                    logger.info("Updating case : {} with : {}", globalCasesRetrieved.getId(), casesVo.toString());
-                    covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, globalCasesRetrieved, country));
                 } else if (globalCasesRetrieved == null) {
+                    newGlobalCases = CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country);
+                    logger.info("Saving new case : {}", newGlobalCases.toString());
+                    covidCasesService.saveCase(newGlobalCases);
                     saved += 1;
-                    logger.info("Saving new case : {}", casesVo.toString());
-                    covidCasesService.saveCase(CovidConvertor.INSTANCE.convertToGlobalCases(casesVo, country));
                 } else {
                     noChange += 1;
-                    logger.info("Case already saved for: {}, skipping...", casesVo.toString());
+                    logger.info("Case already saved for: {}, skipping...", globalCasesRetrieved.toString());
                 }
             } catch (Exception e) {
-                logger.info("An error occurred while checking if the case already exist in DB : {}, {}", casesVo.toString(), e);
+                logger.error("An error occurred while checking if the case already exist in DB : {}, {}", casesVo.toString(), e);
             }
         }
 
@@ -131,6 +148,12 @@ public class FeedServiceImpl implements FeedService {
         apiCallHistory.setUpdated(updated);
         apiCallHistory.setSaved(saved);
         apiCallHistoryRepository.save(apiCallHistory);
+
+
+        if (((updated != 0L && saved != 0L) || noChange != 187) && isSmsEnable) {
+            CovidNotificationRequestDto covidNotificationRequestDto = CovidConvertor.INSTANCE.convertToNotificationRequest(apiCallHistory, zalanceAdminPhoneNumber, NotificationCategory.REPORT);
+            notificationPublisher.publish(covidMessageBuilder.addDetailsToMessage(covidNotificationRequestDto));
+        }
     }
 
     @Override

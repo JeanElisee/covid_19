@@ -1,0 +1,79 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://192.168.0.99:5432/covid_19
+    username: postgres
+    password: cnh2n+2FN
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+    hibernate:
+      ddl-auto: update
+
+  rabbitmq:
+    host: 192.168.0.99
+    port: 5672
+    username: JeanElisee
+    password: cnh2n+2FN
+
+jwt:
+  secret: covid19keyjwt-GHIOU7867gj
+api-call:
+  url:
+    country: https://api.covid19api.com/countries
+    daily-summary: https://api.covid19api.com/summary
+zalance:
+  scheduler:
+    enabled: true
+  admin:
+    name: Jean-Elisée
+    phone-number: +919606770337
+    email: jeanelisee@gmail.com
+  notification:
+    max-retry:
+      value: 3
+    retry:
+      enable: true
+      x-msg-ttl: 1
+  sms:
+    enable: false
+    company-name: Zalance
+    api-key: df1d1b7c
+    api-secret: j8yv8MWp6k6d92Fs
+  push-notification:
+    enable: true
+    configuration-file: appui-permis-firebase-adminsdk-3zjr5-24fa1271e7.json
+  email:
+    enable: true
+    company:
+      address: info@zalance.com
+      name: Zalance
+    api-key: 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
+  retry:
+    queue:
+      covid:
+        name:
+          country: zalance.covid.country.retry.queue.local
+          cases: zalance.covid.cases.retry.queue.local
+    exchange:
+      name: zalance.covid.deadletter.exchange.local
+  queue:
+    covid:
+      name:
+        country: zalance.covid.country.queue.local
+        cases: zalance.covid.cases.queue.local
+    name:
+      email: zalance.email.queue.local
+      push-notification: zalance.push-notification.queue.local
+      sms: zalance.sms.queue.local
+  exchange:
+    name: zalance.notification.exchange.local
+
+  message:
+    template:
+      path:
+        push:
+          welcome: /templates/messages/push/welcome-push.vm
+        sms:
+          welcome: /templates/messages/sms/welcome-sms.vm
+          report: /templates/messages/sms/report.vm
+        mail:
+          report:

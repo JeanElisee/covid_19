@@ -1,0 +1,79 @@
+spring:
+  datasource:
+    url: ${ZALANCE_COVID_DATASOURCE_URL}
+    username: ${ZALANCE_COVID_DATASOURCE_USERNAME}
+    password: ${ZALANCE_COVID_DATASOURCE_PASSWORD}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQL94Dialect
+    hibernate:
+      ddl-auto: update
+
+  rabbitmq:
+    host: ${ZALANCE_COVID_RMQ_HOST}
+    port: ${ZALANCE_COVID_RMQ_PORT}
+    username: ${ZALANCE_COVID_RMQ_USERNAME}
+    password: ${ZALANCE_COVID_RMQ_PASSWORD}
+
+jwt:
+  secret: covid19keyjwt-GHIOU7867gj
+api-call:
+  url:
+    country: https://api.covid19api.com/countries
+    daily-summary: https://api.covid19api.com/summary
+zalance:
+  scheduler:
+    enabled: true
+  admin:
+    name: Jean-Elisée
+    phone-number: +919606770337
+    email: jeanelisee@gmail.com
+  notification:
+    max-retry:
+      value: 6
+    retry:
+      enable: true
+      x-msg-ttl: 30
+  sms:
+    enable: false
+    company-name: Zalance
+    api-key: df1d1b7c
+    api-secret: j8yv8MWp6k6d92Fs
+  push-notification:
+    enable: true
+    configuration-file: appui-permis-firebase-adminsdk-3zjr5-24fa1271e7.json
+  email:
+    enable: true
+    company:
+      address: info@zalance.com
+      name: Zalance
+    api-key: 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
+  retry:
+    queue:
+      covid:
+        name:
+          country: zalance.covid.country.retry.queue.dev
+          cases: zalance.covid.cases.retry.queue.dev
+    exchange:
+      name: zalance.covid.deadletter.exchange.dev
+  queue:
+    covid:
+      name:
+        country: zalance.covid.country.queue.dev
+        cases: zalance.covid.cases.queue.dev
+    name:
+      email: zalance.email.queue.dev
+      push-notification: zalance.push-notification.queue.dev
+      sms: zalance.sms.queue.dev
+  exchange:
+    name: zalance.notification.exchange.dev
+
+  message:
+    template:
+      path:
+        push:
+          welcome: /templates/messages/push/welcome-push.vm
+        sms:
+          welcome: /templates/messages/sms/welcome-sms.vm
+          report: /templates/messages/sms/report.vm
+        mail:
+          report:

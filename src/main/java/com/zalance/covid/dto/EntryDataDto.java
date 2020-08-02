@@ -1,12 +1,12 @@
 package com.zalance.covid.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.Date;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 @ToString
@@ -35,7 +35,4 @@ public class EntryDataDto {
     private Long active;
     @JsonProperty("Date")
     private Date date;
-
-    public EntryDataDto() {
-    }
 }

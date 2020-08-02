@@ -43,11 +43,11 @@ public class CasesListener {
             feedService.getDataFromApi(ApiCallType.RETRY);
         } catch (RetryException retryException) {
             if (covidFailOverService.canRetry(xDeath) && retryException.getErrorCode() == ErrorCode.ANOTHER_ATTEMPT.getFieldValue()) {
-                logger.error("An error occurred when retrying the cases, Will retry in {}min...", xMsgTtl);
-                throw new AmqpRejectAndDontRequeueException("Failed to save cases to the DB");
+                logger.error("An error occurred when retrying to fetch cases from API, Will retry in {} min...", xMsgTtl);
+                throw new AmqpRejectAndDontRequeueException("Failed to fetch cases from API");
             }
         } catch (Exception exception) {
-            logger.error("A error occurred when retrying the cases, no retry will be done. {}", exception.toString());
+            logger.error("An error occurred retrying to fetch cases from API, no retry will be done. {}", exception.toString());
         }
     }
 }

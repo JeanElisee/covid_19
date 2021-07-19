@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:postgresql://192.168.0.99:5432/covid_19
     username: jet
-    password: cnh2n+2FN
+    password: DATABASE_PASSWORD
     initialization-mode: never
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQL94Dialect
@@ -18,7 +18,7 @@ spring:
     host: 192.168.0.99
     port: 5672
     username: JeanElisee
-    password: cnh2n+2FN
+    password: RABBIT_MQ_PASSWORD
 
 
 
@@ -49,7 +49,7 @@ logging:
 server:
   port: ${ZALANCE_COVID_PORT:7071}
 jwt:
-  secret: covid19keyjwt-GHIOU7867gj
+  secret: JWT_SECRET
 api-call:
   url:
     country: https://api.covid19api.com/countries
@@ -59,8 +59,8 @@ zalance:
     enabled: false
   admin:
     name: Jean-Elisée
-    phone-number: +919606770337
-    email: jeanelisee@gmail.com
+    phone-number: MY_NUMBER
+    email: MY_EMAIL
   notification:
     max-retry:
       value: 2
@@ -80,7 +80,7 @@ zalance:
     company:
       address: info@zalance.com
       name: Zalance
-    api-key: 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
+    api-key: SENDGRID_API_KEY
   retry:
     queue:
       covid:

@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://192.168.0.99:5432/covid_19
     username: postgres
-    password: cnh2n+2FN
+    password: DB_PASSWORD
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQL94Dialect
     hibernate:
@@ -12,10 +12,10 @@ spring:
     host: 192.168.0.99
     port: 5672
     username: JeanElisee
-    password: cnh2n+2FN
+    password: RMQ_PASSWORD
 
 jwt:
-  secret: covid19keyjwt-GHIOU7867gj
+  secret: JWT_SECRET
 api-call:
   url:
     country: https://api.covid19api.com/countries
@@ -25,7 +25,7 @@ zalance:
     enabled: true
   admin:
     name: Jean-Elisée
-    phone-number: +919606770337
+    phone-number: MY_NUMBER
     email: jeanelisee@gmail.com
   notification:
     max-retry:
@@ -37,7 +37,7 @@ zalance:
     enable: false
     company-name: Zalance
     api-key: df1d1b7c
-    api-secret: j8yv8MWp6k6d92Fs
+    api-secret: SMS_API_KEY
   push-notification:
     enable: true
     configuration-file: appui-permis-firebase-adminsdk-3zjr5-24fa1271e7.json
@@ -46,7 +46,7 @@ zalance:
     company:
       address: info@zalance.com
       name: Zalance
-    api-key: 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
+    api-key: SENDGRID_API_KEY
   retry:
     queue:
       covid:
